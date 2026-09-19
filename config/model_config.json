@@ -1,0 +1,20 @@
+{
+  "model_id": "single10fold_weighted_ensemble_dual_blend_0p626_0p374",
+  "target": "adsorption_capacity_mg_per_g",
+  "blend_type": "fixed_convex_two_predictor_blend",
+  "components": [
+    {
+      "role": "baseline_single10fold",
+      "model_path": "models/baseline_single10fold",
+      "model_name": "LightGBMSingle10_BAG_L1",
+      "weight": 0.626
+    },
+    {
+      "role": "train_only_weighted_ensemble",
+      "model_path": "models/weighted_ensemble_single10fold",
+      "model_name": "WeightedEnsemble_L2",
+      "weight": 0.374
+    }
+  ]
+}
+

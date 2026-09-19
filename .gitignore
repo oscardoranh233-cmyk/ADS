@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# IDE
+.vscode/.ropeproject/
+
+# Local model artifacts and prediction outputs
+models/baseline_single10fold/
+models/weighted_ensemble_single10fold/
+outputs/
+*.log
+
