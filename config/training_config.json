@@ -1,0 +1,102 @@
+{
+  "label": "adsorption",
+  "problem_type": "regression",
+  "eval_metric": "root_mean_squared_error",
+  "presets": "medium_quality",
+  "num_bag_folds": 10,
+  "num_bag_sets": 1,
+  "num_stack_levels": 0,
+  "baseline": {
+    "seed": 0,
+    "num_cpus": 12,
+    "fit_weighted_ensemble": false,
+    "hyperparameters": {
+      "GBM": [
+        {
+          "learning_rate": 0.032,
+          "num_leaves": 96,
+          "feature_fraction": 1.0,
+          "min_data_in_leaf": 6,
+          "lambda_l1": 0.0,
+          "lambda_l2": 0.0,
+          "cat_l2": 10.0,
+          "cat_smooth": 10.0,
+          "max_cat_to_onehot": 8,
+          "ag_args": {
+            "name_suffix": "Single10",
+            "priority": 100
+          }
+        }
+      ]
+    }
+  },
+  "second": {
+    "seed": 986,
+    "num_cpus": 10,
+    "fit_weighted_ensemble": true,
+    "hyperparameters": {
+      "GBM": [
+        {
+          "extra_trees": true,
+          "learning_rate": 0.032,
+          "num_leaves": 96,
+          "feature_fraction": 1.0,
+          "min_data_in_leaf": 6,
+          "lambda_l1": 0.0,
+          "lambda_l2": 0.0,
+          "ag_args": {
+            "name_suffix": "_LightGBMXT_Diverse10",
+            "priority": 100
+          }
+        }
+      ],
+      "RF": [
+        {
+          "criterion": "squared_error",
+          "ag_args": {
+            "name_suffix": "_RandomForestMSE_Diverse10",
+            "priority": 90
+          }
+        }
+      ],
+      "XT": [
+        {
+          "criterion": "squared_error",
+          "ag_args": {
+            "name_suffix": "_ExtraTreesMSE_Diverse10",
+            "priority": 80
+          }
+        }
+      ],
+      "XGB": [
+        {
+          "ag_args": {
+            "name_suffix": "_XGBoost_Diverse10",
+            "priority": 70
+          }
+        }
+      ],
+      "CAT": [
+        {
+          "iterations": 500,
+          "learning_rate": 0.05,
+          "depth": 6,
+          "l2_leaf_reg": 3.0,
+          "ag_args": {
+            "name_suffix": "_CatBoost_Diverse10",
+            "priority": 60
+          }
+        }
+      ],
+      "NN_TORCH": [
+        {
+          "num_epochs": 100,
+          "ag_args": {
+            "name_suffix": "_NeuralNetTorch_Diverse10",
+            "priority": 50
+          }
+        }
+      ]
+    }
+  }
+}

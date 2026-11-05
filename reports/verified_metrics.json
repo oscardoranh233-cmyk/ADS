@@ -1,0 +1,69 @@
+{
+  "model_id": "resin125_fixed_blend_0p626_0p374",
+  "feature_count": 125,
+  "reference_metrics_checked": true,
+  "metrics": [
+    {
+      "split": "train",
+      "kind": "inference",
+      "n": 479,
+      "mae": 0.7309416285783504,
+      "rmse": 1.534389817409639,
+      "r2": 0.9676134680455377
+    },
+    {
+      "split": "train",
+      "kind": "historical_diagnostic",
+      "n": 479,
+      "mae": 1.5684965849560655,
+      "rmse": 2.7712575961580703,
+      "r2": 0.8943555168924064
+    },
+    {
+      "split": "train",
+      "kind": "train_oof_analogue",
+      "n": 479,
+      "mae": 2.1014713802281455,
+      "rmse": 3.7066396905817447,
+      "r2": 0.8110034949797771
+    },
+    {
+      "split": "valid",
+      "kind": "inference",
+      "n": 137,
+      "mae": 1.228408534541726,
+      "rmse": 1.7753185437079142,
+      "r2": 0.958790777115816
+    },
+    {
+      "split": "valid",
+      "kind": "historical_diagnostic",
+      "n": 137,
+      "mae": 2.075204919092796,
+      "rmse": 2.9862915824856975,
+      "r2": 0.8833979284565799
+    },
+    {
+      "split": "test",
+      "kind": "inference",
+      "n": 72,
+      "mae": 2.0853413818511704,
+      "rmse": 2.842667641492831,
+      "r2": 0.7718667548189143
+    },
+    {
+      "split": "test",
+      "kind": "historical_diagnostic",
+      "n": 72,
+      "mae": 2.0853413818511704,
+      "rmse": 2.842667641492831,
+      "r2": 0.7718667548189143
+    }
+  ],
+  "semantics": {
+    "inference": "Both saved components predict normally; Train and Valid include fitted baseline rows.",
+    "historical_diagnostic": "Train: baseline OOF + second fitted; Valid: baseline OOF + second held-out; Test: both held-out.",
+    "train_oof_analogue": "Both OOF arrays combined; fold partitions/training pools differ, so this is not nested CV.",
+    "test": "Compound-disjoint test was inspected before promotion; metrics are descriptive."
+  }
+}

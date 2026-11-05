@@ -1,0 +1,25 @@
+{
+  "model_id": "resin125_fixed_blend_0p626_0p374",
+  "metrics": {
+    "train": {
+      "mae": 1.5684965849560655,
+      "rmse": 2.7712575961580703,
+      "r2": 0.8943555168924064,
+      "semantics": "hybrid diagnostic: baseline development OOF plus train-only fitted predictions"
+    },
+    "valid": {
+      "mae": 2.075204919092796,
+      "rmse": 2.9862915824856975,
+      "r2": 0.8833979284565799,
+      "semantics": "historical row-level validation"
+    },
+    "test": {
+      "mae": 2.0853413818511704,
+      "rmse": 2.842667641492831,
+      "r2": 0.7718667548189143,
+      "semantics": "fixed compound-disjoint test, previously inspected"
+    }
+  },
+  "source_experiment": "resin_features_8_18_ablation_20261105",
+  "notes": "Train hybrid uses baseline OOF + second fitted. Valid uses baseline development OOF + second held-out inference. Test is compound-disjoint but previously inspected."
+}

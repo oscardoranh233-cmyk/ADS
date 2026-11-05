@@ -1,0 +1,25 @@
+{
+  "source": "KADSpre/v6_replacement_oof_search_20260729/carboxylic_candidates/oofrank36_327-97-9/data",
+  "files": [
+    {
+      "split": "train",
+      "file": "train_model_rows.csv",
+      "rows": 479,
+      "sha256": "895e822aab9305267fa64306d99ba9783588fe96b068eb1fecc7cdbdf4f39c20"
+    },
+    {
+      "split": "valid",
+      "file": "valid_model_rows.csv",
+      "rows": 137,
+      "sha256": "da1482fd3a886d0c9ad0c7cbd1cda834c64a2afac2daee949ab64c01522f8f51"
+    },
+    {
+      "split": "test",
+      "file": "test_model_rows.csv",
+      "rows": 72,
+      "sha256": "e900f3dd766dfc86ff3cff91b005086fae345e6936af79d1adfe71a4e52cb501"
+    }
+  ],
+  "ordering": "Original CSV row order is required for development OOF alignment.",
+  "test_policy": "Compound-disjoint from train and valid; previously inspected during model selection."
+}

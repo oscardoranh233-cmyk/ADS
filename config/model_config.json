@@ -1,20 +1,42 @@
 {
-  "model_id": "single10fold_weighted_ensemble_dual_blend_0p626_0p374",
+  "model_id": "resin125_fixed_blend_0p626_0p374",
   "target": "adsorption_capacity_mg_per_g",
+  "label": "adsorption",
+  "feature_count": 125,
+  "feature_manifest": "config/feature_columns_125.json",
   "blend_type": "fixed_convex_two_predictor_blend",
+  "promotion_date": "2026-11-05",
+  "scope": "Known eight resin profiles only",
+  "excluded_features": [
+    "resin_surface_x_MolLogP",
+    "resin_polarity_中极性",
+    "resin_polarity_弱极性",
+    "resin_polarity_极性",
+    "resin_polarity_非极性",
+    "resin_density_gap",
+    "resin_porosity_proxy",
+    "resin_packing_ratio",
+    "resin_surface_x_pore",
+    "resin_surface_per_pore",
+    "resin_water_x_surface",
+    "resin_profile_category"
+  ],
   "components": [
     {
       "role": "baseline_single10fold",
       "model_path": "models/baseline_single10fold",
       "model_name": "LightGBMSingle10_BAG_L1",
-      "weight": 0.626
+      "weight": 0.626,
+      "training_rows": 616,
+      "seed": 0
     },
     {
       "role": "train_only_weighted_ensemble",
       "model_path": "models/weighted_ensemble_single10fold",
       "model_name": "WeightedEnsemble_L2",
-      "weight": 0.374
+      "weight": 0.374,
+      "training_rows": 479,
+      "seed": 986
     }
   ]
 }
-

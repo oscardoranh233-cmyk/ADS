@@ -1,5 +1,10 @@
-autogluon.tabular>=1.2,<2.0
-numpy>=1.26
-pandas>=2.0
-openpyxl>=3.1
-
+autogluon.tabular[lightgbm,catboost,xgboost,torch]==1.4.0
+numpy==1.26.4
+pandas==2.3.1
+scikit-learn==1.6.1
+scipy==1.13.1
+lightgbm==4.6.0
+catboost==1.2.5
+xgboost==2.1.4
+torch==2.0.1
+openpyxl==3.1.5

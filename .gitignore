@@ -12,5 +12,6 @@ venv/
 models/baseline_single10fold/
 models/weighted_ensemble_single10fold/
 outputs/
+data/local/
 *.log
 
