@@ -1,25 +1,15 @@
 {
-  "model_id": "resin125_fixed_blend_0p626_0p374",
+  "model_id": "resin125_baseline_lightgbm_dev616_10fold",
   "n_rows": 616,
   "n_features": 125,
-  "semantics": "Direct inference on Train + Valid; not historical OOF predictions. Test excluded from ranking.",
-  "weighted_expected_value": 9.322944261458689,
-  "max_additivity_error": 3.2805979088834647e-06,
+  "semantics": "Direct inference on the 616 development records, with TreeSHAP averaged over ten fold models. Test excluded from ranking.",
+  "weighted_expected_value": 9.258480167948205,
+  "max_additivity_error": 4.526308430286008e-06,
   "top_level_components": [
     {
       "role": "baseline_single10fold",
       "model_name": "LightGBMSingle10_BAG_L1",
-      "outer_weight": 0.626
-    },
-    {
-      "role": "train_only_weighted_ensemble",
-      "model_name": "WeightedEnsemble_L2",
-      "outer_weight": 0.374,
-      "internal_weights": {
-        "LightGBM_LightGBMXT_Diverse10_BAG_L1": 0.36363636363636365,
-        "RandomForest_RandomForestMSE_Diverse10_BAG_L1": 0.4090909090909091,
-        "XGBoost_XGBoost_Diverse10_BAG_L1": 0.22727272727272727
-      }
+      "outer_weight": 1.0
     }
   ],
   "expanded_tree_components": [
@@ -33,63 +23,13 @@
       "shap_methods": [
         "shap_tree_explainer_tree_path_dependent"
       ],
-      "outer_weight": 0.626,
+      "outer_weight": 1.0,
       "internal_weight": 1.0,
-      "effective_weight": 0.626,
+      "effective_weight": 1.0,
       "n_child_models": 10,
-      "max_child_additivity_error": 3.907985046680551e-13,
-      "max_bag_prediction_vs_child_mean_error": 4.294566604556849e-06
-    },
-    {
-      "role": "train_only_weighted_ensemble/LightGBM_LightGBMXT_Diverse10_BAG_L1",
-      "model_name": "LightGBM_LightGBMXT_Diverse10_BAG_L1",
-      "model_type": "StackerEnsembleModel",
-      "child_model_types": [
-        "LGBModel"
-      ],
-      "shap_methods": [
-        "shap_tree_explainer_tree_path_dependent"
-      ],
-      "outer_weight": 0.374,
-      "internal_weight": 0.36363636363636365,
-      "effective_weight": 0.136,
-      "n_child_models": 10,
-      "max_child_additivity_error": 4.405364961712621e-13,
-      "max_bag_prediction_vs_child_mean_error": 4.5386619653697835e-06
-    },
-    {
-      "role": "train_only_weighted_ensemble/RandomForest_RandomForestMSE_Diverse10_BAG_L1",
-      "model_name": "RandomForest_RandomForestMSE_Diverse10_BAG_L1",
-      "model_type": "StackerEnsembleModel",
-      "child_model_types": [
-        "RFModel"
-      ],
-      "shap_methods": [
-        "shap_tree_explainer_tree_path_dependent"
-      ],
-      "outer_weight": 0.374,
-      "internal_weight": 0.4090909090909091,
-      "effective_weight": 0.153,
-      "n_child_models": 1,
-      "max_child_additivity_error": 2.4868995751603507e-13,
-      "max_bag_prediction_vs_child_mean_error": 1.7191568630892107e-06
-    },
-    {
-      "role": "train_only_weighted_ensemble/XGBoost_XGBoost_Diverse10_BAG_L1",
-      "model_name": "XGBoost_XGBoost_Diverse10_BAG_L1",
-      "model_type": "StackerEnsembleModel",
-      "child_model_types": [
-        "XGBoostModel"
-      ],
-      "shap_methods": [
-        "xgboost_native_pred_contribs"
-      ],
-      "outer_weight": 0.374,
-      "internal_weight": 0.22727272727272727,
-      "effective_weight": 0.08499999999999999,
-      "n_child_models": 10,
-      "max_child_additivity_error": 8.42444947011245e-05,
-      "max_bag_prediction_vs_child_mean_error": 4.1961669907664145e-06
+      "max_child_additivity_error": 5.080380560684716e-13,
+      "max_bag_prediction_vs_child_mean_error": 4.526308430286008e-06
     }
-  ]
+  ],
+  "date": "2026-11-17"
 }

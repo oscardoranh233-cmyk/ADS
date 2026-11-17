@@ -57,7 +57,7 @@ def _patch_autogluon_metadata_scan() -> None:
 def prepare_model_features(
     data: pd.DataFrame, project_dir: str | Path = PROJECT_DIR,
 ) -> pd.DataFrame:
-    """Add the locked resin-derived features used by both final components.
+    """Add the locked resin-derived features used by the final LightGBM.
 
     The input must already contain the molecular descriptors and MACCS keys used
     in training, together with the raw resin columns listed in ``RESIN_COLUMNS``.
@@ -105,7 +105,7 @@ class ComponentSpec:
 
 
 class FinalAdsorptionModel:
-    """Locked prediction blend: 0.626 LightGBM + 0.374 WeightedEnsemble_L2."""
+    """Load the standalone LightGBM and average its ten fitted fold models."""
 
     def __init__(
         self, project_dir: str | Path = PROJECT_DIR,
@@ -131,10 +131,11 @@ class FinalAdsorptionModel:
             for item in config["components"]
         ]
         weights = np.asarray([item.weight for item in self.components], dtype=float)
-        if (len(self.components) != 2 or not np.isfinite(weights).all()
+        if (config.get("blend_type") != "single_predictor"
+                or len(self.components) != 1 or not np.isfinite(weights).all()
                 or np.any(weights < 0)
                 or not np.isclose(weights.sum(), 1.0, atol=1e-12, rtol=0)):
-            raise ValueError("The final model requires exactly two non-negative weights summing to 1.0")
+            raise ValueError("The current default requires one LightGBM predictor with weight 1.0")
         self._predictors: list[Any] | None = None
 
     def load(self) -> "FinalAdsorptionModel":

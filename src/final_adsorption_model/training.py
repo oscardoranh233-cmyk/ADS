@@ -1,4 +1,4 @@
-"""Locked training and evaluation without dependencies on the parent project."""
+"""Locked ten-fold LightGBM training and evaluation, independent of the parent project."""
 from __future__ import annotations
 
 import hashlib
@@ -11,7 +11,8 @@ import pandas as pd
 from .model import FinalAdsorptionModel, _patch_autogluon_metadata_scan, prepare_model_features
 
 LABEL = "adsorption"
-SPLITS = ("train", "valid", "test")
+SPLITS = ("train", "valid", "test")  # Storage file keys, not evaluation partitions.
+FOLD_COLUMN = "__development_cv_fold__"
 
 
 def sha256_file(path: Path) -> str:
@@ -39,7 +40,7 @@ def load_locked_data(project_dir: Path, data_dir: Path) -> dict[str, pd.DataFram
         frames[item["split"]] = frame
     ids = pd.concat([frames[s].row_id for s in SPLITS], ignore_index=True)
     if not ids.is_unique:
-        raise ValueError("A row appears in more than one split")
+        raise ValueError("A row appears in more than one storage file")
     group = "compound_group_key"
     development = set(frames["train"][group]) | set(frames["valid"][group])
     if development & set(frames["test"][group]):
@@ -57,6 +58,26 @@ def verify_artifacts(project_dir: Path) -> dict[str, int]:
             "verified_bytes": sum(item["bytes"] for item in manifest["files"])}
 
 
+def development_frame(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Join the two storage files in locked order into one development set."""
+    return pd.concat([frames[split] for split in ("train", "valid")],
+                     ignore_index=True).assign(split="development")
+
+
+def development_folds(development: pd.DataFrame, config: dict) -> np.ndarray:
+    from sklearn.model_selection import KFold
+
+    if (len(development) != 616 or config["num_bag_folds"] != 10
+            or config["num_bag_sets"] != 1 or "development_cv_seed" not in config):
+        raise ValueError("Expected 616 development records and one run of ten-fold CV")
+    splitter = KFold(n_splits=config["num_bag_folds"], shuffle=True,
+                     random_state=config["development_cv_seed"])
+    folds = np.zeros(len(development), dtype=int)
+    for fold, (_, indices) in enumerate(splitter.split(development), start=1):
+        folds[indices] = fold
+    return folds
+
+
 def train_locked_model(
     project_dir: Path, data_dir: Path, model_dir: Path,
 ) -> FinalAdsorptionModel:
@@ -66,45 +87,47 @@ def train_locked_model(
     frames = load_locked_data(project_dir, data_dir)
     config = json.loads((project_dir / "config/training_config.json").read_text(encoding="utf-8"))
     model = FinalAdsorptionModel(project_dir, model_dir=model_dir)
+    development = development_frame(frames)
+    folds = development_folds(development, config)
+    component, = model.components
+    recipe = config["baseline"]
+    if (config["num_stack_levels"] != 0 or recipe["fit_weighted_ensemble"]
+            or set(recipe["hyperparameters"]) != {"GBM"}
+            or len(recipe["hyperparameters"]["GBM"]) != 1):
+        raise ValueError("The default recipe requires one LightGBM without stacking or weighted ensembles")
+    training = prepare_model_features(development, project_dir).copy()
+    training[LABEL] = development[LABEL].to_numpy(float)
+    training[FOLD_COLUMN] = folds
     _patch_autogluon_metadata_scan()
     from autogluon.tabular import TabularPredictor
 
-    development = pd.concat([frames["train"], frames["valid"]], ignore_index=True)
-    predictors = []
-    for component, recipe_name, raw in zip(
-        model.components, ("baseline", "second"), (development, frames["train"]),
-    ):
-        recipe = config[recipe_name]
-        training = prepare_model_features(raw, project_dir).copy()
-        training[LABEL] = raw[LABEL].to_numpy(float)
-        predictor = TabularPredictor(
-            label=config["label"], problem_type=config["problem_type"],
-            eval_metric=config["eval_metric"], path=str(component.model_path),
-            verbosity=2, learner_kwargs={"random_state": recipe["seed"]},
-        )
-        predictor.fit(
-            train_data=training, presets=config["presets"],
-            hyperparameters=recipe["hyperparameters"],
-            num_bag_folds=config["num_bag_folds"], num_bag_sets=config["num_bag_sets"],
-            num_stack_levels=config["num_stack_levels"],
-            fit_weighted_ensemble=recipe["fit_weighted_ensemble"],
-            fit_full_last_level_weighted_ensemble=False,
-            full_weighted_ensemble_additionally=False,
-            dynamic_stacking=False, calibrate_decision_threshold=False,
-            save_bag_folds=True, refit_full=False, set_best_to_refit_full=False,
-            num_gpus=0, num_cpus=recipe["num_cpus"],
-        )
-        if component.model_name not in predictor.model_names():
-            raise RuntimeError(f"Expected model was not trained: {component.model_name}")
-        predictors.append(predictor)
-    model._predictors = predictors
+    predictor = TabularPredictor(
+        label=config["label"], problem_type=config["problem_type"],
+        eval_metric=config["eval_metric"], path=str(component.model_path),
+        groups=FOLD_COLUMN, verbosity=2, learner_kwargs={"random_state": recipe["seed"]},
+    )
+    predictor.fit(
+        train_data=training, presets=config["presets"],
+        hyperparameters=recipe["hyperparameters"],
+        num_bag_folds=config["num_bag_folds"], num_bag_sets=config["num_bag_sets"],
+        num_stack_levels=0, fit_weighted_ensemble=False,
+        fit_full_last_level_weighted_ensemble=False,
+        full_weighted_ensemble_additionally=False,
+        dynamic_stacking=False, calibrate_decision_threshold=False,
+        save_bag_folds=True, refit_full=False, set_best_to_refit_full=False,
+        num_gpus=0, num_cpus=recipe["num_cpus"],
+    )
+    if predictor.model_names() != [component.model_name]:
+        raise RuntimeError(f"Expected only the configured LightGBM: {component.model_name}")
+    model._predictors = [predictor]
     return model
 
 
 def score(y: np.ndarray, prediction: np.ndarray) -> dict[str, float]:
     y, prediction = np.asarray(y, dtype=float), np.asarray(prediction, dtype=float)
-    if y.shape != prediction.shape or not np.isfinite(prediction).all():
-        raise ValueError("Predictions must be finite and aligned with labels")
+    if (y.ndim != 1 or not y.size or y.shape != prediction.shape
+            or not np.isfinite(y).all() or not np.isfinite(prediction).all()):
+        raise ValueError("Labels and predictions must be finite, nonempty and aligned vectors")
     error = y - prediction
     total = np.square(y - y.mean()).sum()
     return {"mae": float(np.abs(error).mean()),
@@ -116,62 +139,10 @@ def evaluate_locked_model(
     model: FinalAdsorptionModel, data_dir: Path, output_dir: Path,
     check_reference: bool = False,
 ) -> dict:
-    """Separate live fitted predictions from the historical OOF diagnostic."""
+    """Report ten-fold mean training/validation scores and the fixed-test score."""
     frames = load_locked_data(model.project_dir, data_dir)
     model.load()
-    baseline, second = model._predictors
-    base_spec, second_spec = model.components
-    base_oof = baseline.predict_oof(model=base_spec.model_name).to_numpy(float)
-    second_oof = second.predict_oof(model=second_spec.model_name).to_numpy(float)
-    n_train = len(frames["train"])
-    n_development = n_train + len(frames["valid"])
-    if len(base_oof) != n_development or len(second_oof) != n_train:
-        raise ValueError("OOF predictions do not match the locked row counts")
+    config = json.loads((model.project_dir / "config/training_config.json").read_text(encoding="utf-8"))
+    from .development_evaluation import evaluate_development_model
 
-    output, metrics = [], []
-    for split in SPLITS:
-        raw = frames[split]
-        features = prepare_model_features(raw, model.project_dir)
-        p_base = baseline.predict(features, model=base_spec.model_name).to_numpy(float)
-        p_second = second.predict(features, model=second_spec.model_name).to_numpy(float)
-        fitted = base_spec.weight * p_base + second_spec.weight * p_second
-        historical_base = (base_oof[:n_train] if split == "train" else
-                           base_oof[n_train:] if split == "valid" else p_base)
-        diagnostic = base_spec.weight * historical_base + second_spec.weight * p_second
-        result = raw[["row_id", "compound_id", LABEL]].copy()
-        result["split"] = split
-        result["inference_prediction"] = fitted
-        result["historical_diagnostic_prediction"] = diagnostic
-        result["train_oof_analogue"] = (
-            base_spec.weight * historical_base + second_spec.weight * second_oof
-            if split == "train" else np.nan
-        )
-        # The manuscript uses fitted Train and historical diagnostic Valid/Test.
-        result["manuscript_prediction"] = fitted if split == "train" else diagnostic
-        output.append(result)
-        for kind, values in (("inference", fitted), ("historical_diagnostic", diagnostic)):
-            metrics.append({"split": split, "kind": kind, "n": len(raw),
-                            **score(raw[LABEL].to_numpy(float), values)})
-        if split == "train":
-            metrics.append({"split": split, "kind": "train_oof_analogue", "n": len(raw),
-                            **score(raw[LABEL].to_numpy(float), result.train_oof_analogue.to_numpy())})
-    if check_reference:
-        reference = json.loads((model.project_dir / "reports/reference_metrics.json").read_text(encoding="utf-8"))
-        for item in metrics:
-            if item["kind"] == "historical_diagnostic":
-                for key in ("mae", "rmse", "r2"):
-                    np.testing.assert_allclose(item[key], reference["metrics"][item["split"]][key],
-                                               rtol=0, atol=1e-6)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    pd.concat(output, ignore_index=True).to_csv(output_dir / "predictions.csv", index=False, encoding="utf-8-sig")
-    pd.DataFrame(metrics).to_csv(output_dir / "metrics.csv", index=False)
-    report = {"model_id": model.model_id, "feature_count": len(model.feature_columns),
-              "reference_metrics_checked": check_reference, "metrics": metrics,
-              "semantics": {
-                  "inference": "Both saved components predict normally; Train and Valid include fitted baseline rows.",
-                  "historical_diagnostic": "Train: baseline OOF + second fitted; Valid: baseline OOF + second held-out; Test: both held-out.",
-                  "train_oof_analogue": "Both OOF arrays combined; fold partitions/training pools differ, so this is not nested CV.",
-                  "test": "Compound-disjoint test was inspected before promotion; metrics are descriptive.",
-              }}
-    (output_dir / "evaluation.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    return report
+    return evaluate_development_model(model, frames, config, output_dir, check_reference)

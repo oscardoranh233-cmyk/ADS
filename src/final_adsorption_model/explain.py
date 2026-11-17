@@ -1,4 +1,4 @@
-"""Exact tree attribution for the locked nested blend, adapted from the verified analysis."""
+"""TreeSHAP utilities used to explain the default ten-fold LightGBM."""
 from __future__ import annotations
 from functools import lru_cache
 import numpy as np

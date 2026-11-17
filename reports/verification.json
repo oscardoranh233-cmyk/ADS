@@ -1,36 +1,33 @@
 {
-  "date": "2026-11-05",
-  "model_id": "resin125_fixed_blend_0p626_0p374",
-  "unit_tests": {
-    "passed": 9,
-    "runtimes": [
-      "Python 3.13.5 (pytest)",
-      "Python 3.9.25 (unittest)"
-    ]
+  "date": "2026-11-17",
+  "model_id": "resin125_baseline_lightgbm_dev616_10fold",
+  "development_rows": 616,
+  "test_rows": 72,
+  "unit_tests_passed": 13,
+  "artifact_files_verified": 20,
+  "artifact_bytes_verified": 15889685,
+  "reference_metrics_checked": true,
+  "default_model_metrics_match": true,
+  "development_fold_models": 10,
+  "prediction_parity": {
+    "rows": 688,
+    "feature_values_match": true,
+    "root_vs_package_max_abs_error": 0.0
   },
-  "real_model_runtime": "Python 3.9.25 / AutoGluon 1.4.0 / Windows",
-  "exact_feature_parity_rows": {
-    "train": 479,
-    "valid": 137,
-    "test": 72
+  "test_prediction_vs_fold_mean_max_abs_error": 2.6702880866480427e-06,
+  "shap_verification": {
+    "n_rows": 616,
+    "n_features": 125,
+    "n_child_models": 10,
+    "max_additivity_error": 4.526308430286008e-06
   },
-  "historical_prediction_max_absolute_difference": 0.0,
-  "cli_test_rows": 72,
-  "model_artifact_files_verified": 100,
-  "model_artifact_bytes_verified": 139348559,
-  "historical_metrics_match": true,
-  "training_hyperparameters_match_original_recipe": true,
-  "full_retraining_executed": false,
-  "shap": {
-    "rows": 616,
-    "features": 125,
-    "ranking_matches_confirmed_figure5": true,
-    "max_additivity_error": 3.2805979088834647e-06
-  },
-  "source_code_sha256": {
-    "default_model.py": "38ec3c60b44f5741b8e21d160ea771dc1f2c953e2161e414e04151230d7b482f",
-    "retrain_without_features_8_18.py": "2ca42a58d44f9e316d6bdd3189cd9bb3af511c2562a93a10f0b012392705cc46"
-  },
-  "published_scope": "Source code, configuration, checksums, and aggregate verification reports; local fitted models, datasets and per-row predictions are ignored.",
-  "smiles_to_features_to_prediction_smoke_test": "passed: one synthetic ethanol input on one known resin profile"
+  "publication_scope": "Source code, configuration, manifests and aggregate reports. Local fitted artifacts, research data and per-row predictions excluded.",
+  "retraining_verification": {
+    "completed": true,
+    "prediction_rows": 688,
+    "max_abs_prediction_difference": 0.0,
+    "all_fold_metrics_identical": true,
+    "reference_metrics_checked": true,
+    "evaluation_report": "outputs/reproduction_20261117/evaluation/evaluation.json"
+  }
 }

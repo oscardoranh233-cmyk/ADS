@@ -1,25 +1,42 @@
 {
-  "model_id": "resin125_fixed_blend_0p626_0p374",
-  "metrics": {
-    "train": {
-      "mae": 1.5684965849560655,
-      "rmse": 2.7712575961580703,
-      "r2": 0.8943555168924064,
-      "semantics": "hybrid diagnostic: baseline development OOF plus train-only fitted predictions"
+  "model_id": "resin125_baseline_lightgbm_dev616_10fold",
+  "metrics": [
+    {
+      "split": "train",
+      "kind": "fold_mean",
+      "model": "baseline_single10fold",
+      "n_folds": 10,
+      "n_min": 554,
+      "n_max": 555,
+      "mae": 0.4232184450425742,
+      "rmse": 0.8245467031409135,
+      "r2": 0.9879712335150549
     },
-    "valid": {
-      "mae": 2.075204919092796,
-      "rmse": 2.9862915824856975,
-      "r2": 0.8833979284565799,
-      "semantics": "historical row-level validation"
+    {
+      "split": "valid",
+      "kind": "fold_mean",
+      "model": "baseline_single10fold",
+      "n_folds": 10,
+      "n_min": 61,
+      "n_max": 62,
+      "mae": 1.9367407827325653,
+      "rmse": 2.9474977862636456,
+      "r2": 0.8740501858368483
     },
-    "test": {
-      "mae": 2.0853413818511704,
-      "rmse": 2.842667641492831,
-      "r2": 0.7718667548189143,
-      "semantics": "fixed compound-disjoint test, previously inspected"
+    {
+      "split": "test",
+      "kind": "test",
+      "model": "baseline_single10fold",
+      "n": 72,
+      "mae": 1.9844924334022735,
+      "rmse": 2.7756957713215753,
+      "r2": 0.7824895463939933
     }
+  ],
+  "semantics": {
+    "oof": "Row-wise ten-fold OOF predictions with validation-fold early stopping.",
+    "test": "Metrics of the averaged fold-model predictions on the fixed compound-disjoint test set, which was previously inspected.",
+    "fold_mean": "Arithmetic mean of ten separately computed fold scores. Train uses the nine fitting folds and Valid uses the held-out fold of each model."
   },
-  "source_experiment": "resin_features_8_18_ablation_20261105",
-  "notes": "Train hybrid uses baseline OOF + second fitted. Valid uses baseline development OOF + second held-out inference. Test is compound-disjoint but previously inspected."
+  "source_experiment": "model fix2/baseline LightGBM"
 }

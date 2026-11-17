@@ -21,10 +21,10 @@ def read_table(path: Path) -> pd.DataFrame:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Predict adsorption capacity with the locked final blend.")
+    parser = argparse.ArgumentParser(description="Predict adsorption capacity with the default ten-fold LightGBM.")
     parser.add_argument("--input", type=Path, required=True, help="Feature-complete CSV/XLSX input table")
     parser.add_argument("--output", type=Path, required=True, help="Prediction CSV output")
-    parser.add_argument("--model-dir", type=Path, help="Override the directory containing both predictors")
+    parser.add_argument("--model-dir", type=Path, help="Directory containing baseline_single10fold/")
     args = parser.parse_args()
 
     data = read_table(args.input)

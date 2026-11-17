@@ -1,69 +1,58 @@
 {
-  "model_id": "resin125_fixed_blend_0p626_0p374",
+  "model_id": "resin125_baseline_lightgbm_dev616_10fold",
   "feature_count": 125,
   "reference_metrics_checked": true,
+  "fold_seed": 1,
+  "development_rows": 616,
+  "test_rows": 72,
+  "development_compounds": 77,
+  "test_compounds": 9,
+  "components": {
+    "baseline_single10fold": {
+      "training_rows": 616,
+      "bag_children": {
+        "LightGBMSingle10_BAG_L1": 10
+      }
+    }
+  },
+  "test_prediction_vs_fold_mean_max_abs_error": 2.6702880866480427e-06,
   "metrics": [
     {
       "split": "train",
-      "kind": "inference",
-      "n": 479,
-      "mae": 0.7309416285783504,
-      "rmse": 1.534389817409639,
-      "r2": 0.9676134680455377
-    },
-    {
-      "split": "train",
-      "kind": "historical_diagnostic",
-      "n": 479,
-      "mae": 1.5684965849560655,
-      "rmse": 2.7712575961580703,
-      "r2": 0.8943555168924064
-    },
-    {
-      "split": "train",
-      "kind": "train_oof_analogue",
-      "n": 479,
-      "mae": 2.1014713802281455,
-      "rmse": 3.7066396905817447,
-      "r2": 0.8110034949797771
+      "kind": "fold_mean",
+      "model": "baseline_single10fold",
+      "n_folds": 10,
+      "n_min": 554,
+      "n_max": 555,
+      "mae": 0.4232184450425742,
+      "rmse": 0.8245467031409135,
+      "r2": 0.9879712335150549
     },
     {
       "split": "valid",
-      "kind": "inference",
-      "n": 137,
-      "mae": 1.228408534541726,
-      "rmse": 1.7753185437079142,
-      "r2": 0.958790777115816
-    },
-    {
-      "split": "valid",
-      "kind": "historical_diagnostic",
-      "n": 137,
-      "mae": 2.075204919092796,
-      "rmse": 2.9862915824856975,
-      "r2": 0.8833979284565799
+      "kind": "fold_mean",
+      "model": "baseline_single10fold",
+      "n_folds": 10,
+      "n_min": 61,
+      "n_max": 62,
+      "mae": 1.9367407827325653,
+      "rmse": 2.9474977862636456,
+      "r2": 0.8740501858368483
     },
     {
       "split": "test",
-      "kind": "inference",
+      "kind": "test",
+      "model": "baseline_single10fold",
       "n": 72,
-      "mae": 2.0853413818511704,
-      "rmse": 2.842667641492831,
-      "r2": 0.7718667548189143
-    },
-    {
-      "split": "test",
-      "kind": "historical_diagnostic",
-      "n": 72,
-      "mae": 2.0853413818511704,
-      "rmse": 2.842667641492831,
-      "r2": 0.7718667548189143
+      "mae": 1.9844924334022735,
+      "rmse": 2.7756957713215753,
+      "r2": 0.7824895463939933
     }
   ],
   "semantics": {
-    "inference": "Both saved components predict normally; Train and Valid include fitted baseline rows.",
-    "historical_diagnostic": "Train: baseline OOF + second fitted; Valid: baseline OOF + second held-out; Test: both held-out.",
-    "train_oof_analogue": "Both OOF arrays combined; fold partitions/training pools differ, so this is not nested CV.",
-    "test": "Compound-disjoint test was inspected before promotion; metrics are descriptive."
+    "oof": "Row-wise ten-fold OOF predictions with validation-fold early stopping. Pooled OOF scores are not the reported validation fold means.",
+    "test": "Metrics of the averaged fold-model predictions on the fixed compound-disjoint test set, which was previously inspected.",
+    "fold_mean": "Arithmetic mean of ten separately computed fold scores. Train uses the nine fitting folds and Valid uses the held-out fold of each model.",
+    "predictions": "Development rows have held-out OOF predictions and direct ten-fold inference predictions; only the former represent held-out predictions. Test rows have direct ten-fold inference predictions and no OOF assignment."
   }
 }

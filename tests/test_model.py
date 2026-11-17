@@ -14,7 +14,7 @@ PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT / "src"))
 from final_adsorption_model import FinalAdsorptionModel, feature_columns, prepare_model_features
 from final_adsorption_model.model import SURFACE, PORE, POLARITY, WATER
-from final_adsorption_model.training import load_locked_data, train_locked_model
+from final_adsorption_model.training import FOLD_COLUMN, load_locked_data, train_locked_model
 
 
 def sample() -> pd.DataFrame:
@@ -57,7 +57,7 @@ class FinalModelTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             prepare_model_features(pd.concat([sample(), sample()[["MolLogP"]]], axis=1))
 
-    def test_blend_preserves_row_index(self):
+    def test_prediction_preserves_row_index(self):
         class Predictor:
             def __init__(self, values):
                 self.values = values
@@ -66,10 +66,23 @@ class FinalModelTests(unittest.TestCase):
                     raise AssertionError("Unexpected model feature columns")
                 return pd.Series(self.values, index=data.index)
         model = FinalAdsorptionModel(PROJECT)
-        model._predictors = [Predictor([10., 30.]), Predictor([20., 50.])]
+        model._predictors = [Predictor([10., 30.])]
         prediction = model.predict(sample())
-        np.testing.assert_allclose(prediction, [13.74, 37.48])
+        np.testing.assert_allclose(prediction, [10., 30.])
         self.assertEqual(prediction.index.tolist(), [8, 3])
+
+    def test_two_predictor_configuration_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shutil.copytree(PROJECT / "config", root / "config")
+            path = root / "config/model_config.json"
+            config = json.loads(path.read_text(encoding="utf-8"))
+            component = config["components"][0]
+            config["components"] = [{**component, "weight": 0.75},
+                                    {**component, "role": "second", "weight": 0.25}]
+            path.write_text(json.dumps(config), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "one LightGBM predictor"):
+                FinalAdsorptionModel(root)
 
     def test_invalid_weights_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -77,11 +90,10 @@ class FinalModelTests(unittest.TestCase):
             shutil.copytree(PROJECT / "config", root / "config")
             path = root / "config/model_config.json"
             config = json.loads(path.read_text(encoding="utf-8"))
-            for weights in ((float("nan"), .374), (-.1, 1.1), (.626001, .374)):
-                for item, weight in zip(config["components"], weights):
-                    item["weight"] = weight
+            for weight in (float("nan"), -.1, 1.000001):
+                config["components"][0]["weight"] = weight
                 path.write_text(json.dumps(config), encoding="utf-8")
-                with self.subTest(weights=weights), self.assertRaises(ValueError):
+                with self.subTest(weight=weight), self.assertRaises(ValueError):
                     FinalAdsorptionModel(root)
 
     def test_missing_models_report_actionable_error(self):
@@ -105,14 +117,16 @@ class FinalModelTests(unittest.TestCase):
     def test_training_uses_locked_pools_and_fit_settings(self):
         import types
         fitted = []
-        frames = {split: sample().assign(adsorption=[1., 2.]) for split in ("train", "valid", "test")}
+        frames = {split: pd.concat([sample()] * ((n + 1) // 2), ignore_index=True).iloc[:n]
+                  .assign(adsorption=label)
+                  for split, n, label in (("train", 479, 1.), ("valid", 137, 2.), ("test", 72, 3.))}
         class Predictor:
             def __init__(self, **kwargs):
                 self.constructor = kwargs
             def fit(self, **kwargs):
                 fitted.append((self.constructor, kwargs))
             def model_names(self):
-                return ["LightGBMSingle10_BAG_L1", "WeightedEnsemble_L2"]
+                return ["LightGBMSingle10_BAG_L1"]
         fake = types.ModuleType("autogluon.tabular")
         fake.TabularPredictor = Predictor
         with tempfile.TemporaryDirectory() as directory:
@@ -120,13 +134,19 @@ class FinalModelTests(unittest.TestCase):
                  patch("final_adsorption_model.training._patch_autogluon_metadata_scan"), \
                  patch.dict(sys.modules, {"autogluon.tabular": fake}):
                 train_locked_model(PROJECT, Path(directory), Path(directory) / "new")
-        self.assertEqual([len(item[1]["train_data"]) for item in fitted], [4, 2])
-        self.assertEqual([item[0]["learner_kwargs"]["random_state"] for item in fitted], [0, 986])
-        self.assertEqual([item[1]["fit_weighted_ensemble"] for item in fitted], [False, True])
-        for _, fit in fitted:
-            self.assertEqual(fit["train_data"].columns.tolist(), feature_columns() + ["adsorption"])
-            self.assertEqual((fit["num_bag_folds"], fit["num_bag_sets"], fit["num_stack_levels"]), (10, 1, 0))
-            self.assertFalse(fit["refit_full"])
+        self.assertEqual(len(fitted), 1)
+        (constructor, fit), = fitted
+        training = fit["train_data"]
+        self.assertEqual(len(training), 616)
+        self.assertEqual(constructor["learner_kwargs"]["random_state"], 0)
+        self.assertEqual(constructor["groups"], FOLD_COLUMN)
+        self.assertEqual(training.columns.tolist(), feature_columns() + ["adsorption", FOLD_COLUMN])
+        self.assertEqual(training[FOLD_COLUMN].value_counts().sort_values().tolist(), [61] * 4 + [62] * 6)
+        self.assertEqual(training.adsorption.value_counts().to_dict(), {1.: 479, 2.: 137})
+        self.assertEqual((fit["num_bag_folds"], fit["num_bag_sets"], fit["num_stack_levels"]), (10, 1, 0))
+        self.assertEqual(fit["hyperparameters"]["GBM"][0]["min_data_in_leaf"], 6)
+        self.assertFalse(fit["fit_weighted_ensemble"])
+        self.assertFalse(fit["refit_full"])
 
 
 if __name__ == "__main__":

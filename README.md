@@ -1,32 +1,32 @@
 # Final adsorption model — 125 features
 
-本仓库已更新为 **2026-11-05 最终确认的 125 特征版本**：
+当前默认模型为 **单 LightGBM**，在 616 条开发记录上进行一次十折交叉验证训练，预测时对十个折模型取平均。
 
 ```text
-prediction = 0.626 × LightGBMSingle10_BAG_L1 + 0.374 × WeightedEnsemble_L2
-model_id   = resin125_fixed_blend_0p626_0p374
+prediction = LightGBMSingle10_BAG_L1
+model_id   = resin125_baseline_lightgbm_dev616_10fold
 ```
 
-包含独立运行的特征处理、训练、预测、评估、SMILES 描述符生成、完整融合模型 SHAP 解释和测试代码。代码不依赖上级项目的 Python 模块。模型适用范围为研究中的八种已知树脂。
+包含独立运行的特征处理、训练、预测、评估、SMILES 描述符生成、SHAP 解释和测试代码。模型适用范围为研究中的八种已知树脂。
 
 ## 最终模型配置
 
-| 项目 | 基线分量 | 多模型集成分量 |
-| --- | --- | --- |
-| 输入 | 相同的 125 个特征 | 相同的 125 个特征 |
-| 训练数据 | Train + Valid，共 616 条 | Train，共 479 条 |
-| 算法 | LightGBM | AutoGluon WeightedEnsemble_L2 |
-| Bagging | 单次 10 折 | 单次 10 折；RF/XT 使用引擎的原生 bagging 实现 |
-| 随机种子 | 0 | 986 |
-| 外层权重 | 0.626 | 0.374 |
+| 项目 | LightGBM |
+| --- | --- |
+| 输入 | 125 个特征 |
+| 训练数据 | 616 条开发记录 |
+| 算法 | LightGBM，`min_data_in_leaf=6` |
+| Bagging | 按记录单次 10 折 |
+| 划分种子 | 1 |
+| AutoGluon 运行种子 | 0 |
 
-保留 7 个基本树脂属性和 9 个树脂–分子交互特征。相对旧版 136 特征，移除了 4 个极性 one-hot、6 个形态衍生特征和 `resin_profile_category`；此前排除的 `resin_surface_x_MolLogP` 仍不使用。精确顺序见 [feature_columns_125.json](config/feature_columns_125.json)。输入中的标签、ID 和其他多余列不会传入模型。
+输入包括分子描述符、MACCS 指纹、7 个基本树脂属性和 9 个树脂–分子交互特征，共 125 列。精确顺序见 [feature_columns_125.json](config/feature_columns_125.json)。输入中的标签、ID 和其他多余列不会传入模型。
 
-第二分量实际选中 LightGBMXT、RandomForest 和 XGBoost，内部权重为 0.36363636、0.40909091、0.22727273。训练候选还包含 ExtraTrees、CatBoost 和 NeuralNetTorch；完整超参数见 [training_config.json](config/training_config.json)。
+折归属由锁定行顺序和划分种子确定。完整超参数见 [training_config.json](config/training_config.json)。
 
 ## 环境
 
-已保存的模型来自 **Windows、Python 3.9.25、AutoGluon 1.4.0**。请使用匹配环境加载这些模型；完整关键版本见 [training_environment.json](config/training_environment.json)。普通 Python 3.13 环境只用于不加载模型的单元测试。
+已保存的模型来自 **Windows、Python 3.9.25、AutoGluon 1.4.0**。请使用匹配环境加载这些模型；原训练环境的关键版本见 [training_environment.json](config/training_environment.json)。`requirements.txt` 仅安装当前 LightGBM 流程需要的直接依赖。
 
 ```powershell
 conda create -n adsorption125 python=3.9.25
@@ -34,11 +34,13 @@ conda activate adsorption125
 python -m pip install -r requirements.txt
 ```
 
-模型文件使用 pickle，加载本项目可信的模型文件。依赖文件锁定关键直接依赖；它不是所有传递依赖的完整环境锁文件。不同平台或重新训练可能出现数值差异，原始模型的 SHA-256 校验清单用于确认最终版本。
+模型文件使用 pickle，加载本项目可信的模型文件。依赖文件锁定关键直接依赖；它不是所有传递依赖的完整环境锁文件。不同平台或重新训练可能出现数值差异，当前重训模型的 SHA-256 校验清单用于确认最终版本。
 
 ## 本地模型与数据
 
-本地 `models/` 已放入两套确认模型，`data/local/` 已放入锁定划分的三个 CSV。**GitHub 上传代码、配置、校验清单和验证报告；模型二进制、原始研究数据及逐行预测不纳入 Git。** 新克隆需要自行取得这两类文件，才能预测或重新训练。
+本地 `models/single_baseline/` 保存当前预测器，`data/local/` 保存三个锁定 CSV。两个开发数据文件按固定顺序合并为 616 条记录，再执行十折划分；文件名中的 `train`、`valid` 仅表示存储来源，不作为单独的评价集合。测试数据为另外 72 条记录。预测需要模型文件，重新训练需要锁定数据。
+
+GitHub 仓库包含代码、配置、文件校验清单和汇总指标。拟合模型、原始数据、逐行预测及本地历史备份保留在本地，不随代码提交；从 GitHub 克隆后需先导入模型和数据。
 
 如果有原始研究项目，运行：
 
@@ -68,7 +70,7 @@ model = FinalAdsorptionModel()
 prediction = model.predict(pd.read_csv("data/local/test_model_rows.csv"))
 ```
 
-可用 `--model-dir` 指向包含两套预测器的新模型目录。
+可用 `--model-dir` 指向包含 `baseline_single10fold/` 的模型目录。
 
 ## 评估与复现
 
@@ -76,16 +78,17 @@ prediction = model.predict(pd.read_csv("data/local/test_model_rows.csv"))
 python scripts/evaluate.py --verify-artifacts --check-reference
 ```
 
-该命令核对 100 个模型文件、锁定数据及 479/137/72 划分，再输出 `outputs/evaluation/` 下的指标与逐行预测。
+该命令校验锁定数据和模型文件，并在 `outputs/evaluation/` 输出 `metrics.csv`、`fold_metrics.csv`、`predictions.csv` 和 `evaluation.json`。汇总仅包含下列三行，不再按 7:2:1 分组报告。已核验的逐折分数见 [fold_metrics.csv](reports/fold_metrics.csv)。
 
-| 口径 | MAE | RMSE | R² |
-| --- | ---: | ---: | ---: |
-| Train，论文使用的拟合预测 | 0.7309 | 1.5344 | 0.9676 |
-| Train，历史混合诊断 | 1.5685 | 2.7713 | 0.8944 |
-| Valid，历史诊断 | 2.0752 | 2.9863 | 0.8834 |
-| Test，化合物不重叠 | 2.0853 | 2.8427 | 0.7719 |
+| 评价范围 | 记录数 | R² | RMSE (mg/g) | MAE (mg/g) |
+| --- | ---: | ---: | ---: | ---: |
+| 十折训练集均值 | 554–555 | 0.9880 | 0.8245 | 0.4232 |
+| 十折验证集均值 | 61–62 | 0.8741 | 2.9475 | 1.9367 |
+| 固定测试集 | 72 | 0.7825 | 2.7757 | 1.9845 |
 
-历史 Train 诊断组合“基线 development OOF + 第二分量 Train 拟合预测”；历史 Valid 诊断组合“基线 development OOF + 第二分量 Valid 推理”。直接调用 `predict()` 对两个分量均使用正常推理，因此 Train/Valid 结果与历史诊断不同。论文使用拟合 Train 和历史 Valid/Test；评估文件明确提供 `manuscript_prediction` 列。拟合 Train 指标偏乐观，且固定 Test 在最终启用之前已被查看，因此报告的 Test 是描述性指标，不是无偏模型选择估计。
+训练和验证记录数按每折计。先在每个折模型各自的训练与留出记录上评分，再对十折 R²、RMSE、MAE 分别取算术平均值。测试集先对十个折模型的逐行预测取平均，再计算指标。程序同时校验折外预测的行顺序以及测试预测与十折预测均值的一致性。
+
+开发集按记录划分，折间可能有相同化合物，留出折用于早停。固定测试集包含开发集未出现的九个化合物，曾用于早期模型比较。`predictions.csv` 中开发记录统一标记为 `development`，折号为 1–10；测试记录标记为 `test`，折号与 OOF 预测为空。开发集直接推理列用于诊断，不能用来代替逐折验证指标。
 
 重新训练时使用新的输出目录，保留原模型：
 
@@ -93,7 +96,7 @@ python scripts/evaluate.py --verify-artifacts --check-reference
 python scripts/train.py --data-dir data/local --model-dir outputs/retrained_models --output-dir outputs/retrained
 ```
 
-训练脚本保持原始行顺序、种子、超参数、单次 10 折和固定融合权重，不重新划分数据或搜索权重。数据文件必须匹配锁定校验清单。重新训练不会自动替换确认模型。
+训练脚本按锁定行顺序和种子生成十折划分，并应用配置中的超参数。训练结果写入指定的新目录。数据文件必须匹配锁定校验清单。
 
 ## 从 SMILES 构造新输入（可选）
 
@@ -115,21 +118,21 @@ python scripts/predict.py --input outputs/features.csv --output outputs/new_pred
 
 应使用研究中的相同树脂属性与极性编码。每个化合物与每个树脂生成一行。描述符计算沿用已有新化合物预测实现：RDKit 2022.9.5、ETKDGv3 seed 0、UFF、Gasteiger 电荷及 MACCS。`rdkit3d_embed_ok` 记录三维构象生成是否成功；失败时 SASA 回退到 LabuteASA。此入口用于新化合物，不重算或替换锁定训练 CSV 的历史描述符。
 
-## 完整融合模型 SHAP（可选）
+## LightGBM 模型 SHAP（可选）
 
 ```powershell
 python -m pip install -r requirements-explain.txt
 python scripts/explain.py
 ```
 
-展开 WeightedEnsemble 内部权重，对树模型的子模型分别计算 TreeSHAP 后平均，再按有效权重合并。输出 `outputs/shap/importance.csv`、`shap_values.npz` 和 `audit.json`。解释对象为 616 条 development 数据的直接推理，使用完整融合模型，Test 不参与重要性排序。数值加和校验必须通过；不生成论文排版图。
+对十个 LightGBM 折模型计算 TreeSHAP 并按折平均。输出 `outputs/shap/importance.csv`、`shap_values.npz` 和 `audit.json`。解释对象为 616 条开发数据的直接推理。数值加和校验通过后写出文件。
 
 ## 验证
 
-只需 NumPy 和 pandas 即可运行不加载模型的测试：
+安装 `requirements-dev.txt`（NumPy、pandas、scikit-learn 和 pytest）后，可运行不加载模型的测试：
 
 ```powershell
 python -m unittest discover -s tests -v
 ```
 
-也可安装 `requirements-dev.txt` 后运行 `python -m pytest -q`。本次导出完成了 9 项单元测试、真实模型加载、完整划分指标复现、命令行预测以及最终模型 SHAP 验证。具体结果见 [reports/verification.json](reports/verification.json)。完整重新训练未重复执行；保留已确认的模型文件，并验证训练入口的划分、参数与旧配方一致。
+也可运行 `python -m pytest -q`。当前版本完成了 13 项单元测试、20 个模型文件的哈希核对、十折训练与验证指标复算、测试预测均值核对，以及项目默认模型与独立包的预测一致性核对。独立重训复现了全部逐折指标和 688 条记录的预测，最大预测差异为 0；616 条开发记录的 SHAP 加和校验也已通过。具体结果见 [reports/verification.json](reports/verification.json)。

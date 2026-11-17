@@ -16,15 +16,14 @@ def main() -> None:
     parser.add_argument("--source-root", type=Path, required=True, help="Original research project directory")
     args = parser.parse_args()
     source = args.source_root.resolve()
-    model_source = source / "outputs/resin_features_8_18_ablation_20261105/models"
     artifacts = json.loads((PROJECT_DIR / "config/artifact_manifest.json").read_text(encoding="utf-8"))
+    model_source = source / artifacts.get("source_model_dir", "outputs/retrain_naringin_20261106/models")
+    local_model_dir = Path(artifacts.get("local_model_dir", "models"))
     data = json.loads((PROJECT_DIR / "config/data_manifest.json").read_text(encoding="utf-8"))
     copies = []
     for item in artifacts["files"]:
         relative = Path(item["path"])
-        name = relative.parts[1]
-        source_name = "diverse_train_only_single10fold" if name == "weighted_ensemble_single10fold" else name
-        copies.append((model_source / source_name / Path(*relative.parts[2:]),
+        copies.append((model_source / relative.relative_to(local_model_dir),
                        PROJECT_DIR / relative, item["sha256"]))
     for item in data["files"]:
         copies.append((source / data["source"] / item["file"],

@@ -1,11 +1,11 @@
 {
-  "model_id": "resin125_fixed_blend_0p626_0p374",
+  "model_id": "resin125_baseline_lightgbm_dev616_10fold",
   "target": "adsorption_capacity_mg_per_g",
   "label": "adsorption",
   "feature_count": 125,
   "feature_manifest": "config/feature_columns_125.json",
-  "blend_type": "fixed_convex_two_predictor_blend",
-  "promotion_date": "2026-11-05",
+  "blend_type": "single_predictor",
+  "promotion_date": "2026-11-12",
   "scope": "Known eight resin profiles only",
   "excluded_features": [
     "resin_surface_x_MolLogP",
@@ -24,19 +24,13 @@
   "components": [
     {
       "role": "baseline_single10fold",
-      "model_path": "models/baseline_single10fold",
+      "model_path": "models/single_baseline/baseline_single10fold",
       "model_name": "LightGBMSingle10_BAG_L1",
-      "weight": 0.626,
+      "weight": 1.0,
       "training_rows": 616,
       "seed": 0
-    },
-    {
-      "role": "train_only_weighted_ensemble",
-      "model_path": "models/weighted_ensemble_single10fold",
-      "model_name": "WeightedEnsemble_L2",
-      "weight": 0.374,
-      "training_rows": 479,
-      "seed": 986
     }
-  ]
+  ],
+  "data_revision": "row_id 243 Naringin-HPD722: 4.5 mg/g",
+  "evaluation_protocol": "development_record_tenfold_mean_and_fixed_compound_test"
 }

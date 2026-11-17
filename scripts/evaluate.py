@@ -11,7 +11,7 @@ from final_adsorption_model.training import evaluate_locked_model, verify_artifa
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Reproduce fitted and historical OOF metrics.")
+    parser = argparse.ArgumentParser(description="Evaluate development and fixed compound-test predictions.")
     parser.add_argument("--data-dir", type=Path, default=PROJECT_DIR / "data/local")
     parser.add_argument("--model-dir", type=Path)
     parser.add_argument("--output-dir", type=Path, default=PROJECT_DIR / "outputs/evaluation")

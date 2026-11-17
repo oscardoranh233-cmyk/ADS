@@ -1,25 +1,37 @@
 {
-  "source": "KADSpre/v6_replacement_oof_search_20260729/carboxylic_candidates/oofrank36_327-97-9/data",
+  "source": "outputs/retrain_naringin_20261106/project/data",
   "files": [
     {
       "split": "train",
       "file": "train_model_rows.csv",
       "rows": 479,
-      "sha256": "895e822aab9305267fa64306d99ba9783588fe96b068eb1fecc7cdbdf4f39c20"
+      "sha256": "42a1e6c002db63500e3ea9ad5bb21dcbd55ee3b9749b757e5c7bfcc3b04258c3"
     },
     {
       "split": "valid",
       "file": "valid_model_rows.csv",
       "rows": 137,
-      "sha256": "da1482fd3a886d0c9ad0c7cbd1cda834c64a2afac2daee949ab64c01522f8f51"
+      "sha256": "752b3c8f26abcdc30ba9f4a58a277dd10ad32b69a8b7cebb771dd989a75f1464"
     },
     {
       "split": "test",
       "file": "test_model_rows.csv",
       "rows": 72,
-      "sha256": "e900f3dd766dfc86ff3cff91b005086fae345e6936af79d1adfe71a4e52cb501"
+      "sha256": "9bb485caed828ed2ccebc7caf300df47f03cdc7e86d90d55387a8cebcc60d039"
     }
   ],
   "ordering": "Original CSV row order is required for development OOF alignment.",
-  "test_policy": "Compound-disjoint from train and valid; previously inspected during model selection."
+  "test_policy": "Compound-disjoint from train and valid; previously inspected during model selection.",
+  "correction": {
+    "row_id": 243,
+    "compound": "Naringin",
+    "resin": "HPD722",
+    "old_mg_g": 45.0,
+    "new_mg_g": 4.5
+  },
+  "development_storage_order": [
+    "train_model_rows.csv",
+    "valid_model_rows.csv"
+  ],
+  "evaluation_protocol": "Concatenate the two development storage files in locked order; use one record-level ten-fold CV. Report arithmetic means of fold training/validation scores and metrics of averaged fold-model predictions on the fixed test set."
 }

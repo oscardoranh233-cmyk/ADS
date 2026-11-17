@@ -1,4 +1,4 @@
-"""Export final-blend SHAP arrays and rankings on the 616 development profiles."""
+"""Export fold-averaged LightGBM SHAP values on the 616 development profiles."""
 from __future__ import annotations
 import argparse
 import json
@@ -11,11 +11,11 @@ import pandas as pd
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_DIR / "src"))
 from final_adsorption_model import FinalAdsorptionModel, prepare_model_features
-from final_adsorption_model.training import load_locked_data
+from final_adsorption_model.training import development_frame, load_locked_data
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Calculate exact SHAP for every active tree in the final blend.")
+    parser = argparse.ArgumentParser(description="Calculate TreeSHAP averaged across the ten LightGBM fold models.")
     parser.add_argument("--data-dir", type=Path, default=PROJECT_DIR / "data/local")
     parser.add_argument("--output-dir", type=Path, default=PROJECT_DIR / "outputs/shap")
     args = parser.parse_args()
@@ -24,7 +24,7 @@ def main() -> None:
     )
 
     frames = load_locked_data(PROJECT_DIR, args.data_dir)
-    raw = pd.concat([frames["train"], frames["valid"]], ignore_index=True)
+    raw = development_frame(frames)
     features = prepare_model_features(raw, PROJECT_DIR)
     model = FinalAdsorptionModel(PROJECT_DIR).load()
     config = {"components": [{"role": c.role, "predictor_path": str(c.model_path),
@@ -46,7 +46,7 @@ def main() -> None:
     prediction = model.predict(raw).to_numpy(float)
     error = float(np.max(np.abs(expected + values.sum(axis=1) - prediction)))
     if error > ADDITIVITY_TOLERANCE:
-        raise ValueError(f"Final-blend SHAP additivity failed: {error}")
+        raise ValueError(f"LightGBM SHAP additivity failed: {error}")
     importance = pd.DataFrame({"feature": features.columns,
                                "display_name": [pretty_feature_name(c) for c in features.columns],
                                "mean_abs_shap": np.abs(values).mean(axis=0),
@@ -60,7 +60,7 @@ def main() -> None:
                         numeric=features.to_numpy(float), columns=np.array(features.columns.tolist(), dtype=str),
                         row_id=raw.row_id.to_numpy(), expected_value=expected)
     report = {"model_id": model.model_id, "n_rows": len(raw), "n_features": len(features.columns),
-              "semantics": "Direct inference on Train + Valid; not historical OOF predictions. Test excluded from ranking.",
+              "semantics": "Direct inference on the 616 development records, with TreeSHAP averaged over ten fold models. Test excluded from ranking.",
               "weighted_expected_value": expected, "max_additivity_error": error,
               "top_level_components": nesting, "expanded_tree_components": audits}
     (args.output_dir / "audit.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
