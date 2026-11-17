@@ -78,7 +78,7 @@ prediction = model.predict(pd.read_csv("data/local/test_model_rows.csv"))
 python scripts/evaluate.py --verify-artifacts --check-reference
 ```
 
-该命令校验锁定数据和模型文件，并在 `outputs/evaluation/` 输出 `metrics.csv`、`fold_metrics.csv`、`predictions.csv` 和 `evaluation.json`。汇总仅包含下列三行，不再按 7:2:1 分组报告。已核验的逐折分数见 [fold_metrics.csv](reports/fold_metrics.csv)。
+该命令校验锁定数据和模型文件，并在 `outputs/evaluation/` 输出 `metrics.csv`、`fold_metrics.csv`、`predictions.csv` 和 `evaluation.json`。汇总仅包含下列三行。已核验的逐折分数见 [fold_metrics.csv](reports/fold_metrics.csv)。
 
 | 评价范围 | 记录数 | R² | RMSE (mg/g) | MAE (mg/g) |
 | --- | ---: | ---: | ---: | ---: |
